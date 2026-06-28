@@ -46,8 +46,9 @@ def generate_plan(request: GeneratePlanRequest):
         result = compute_traverse(points)
         info = request.survey_info.dict()
         pdf_bytes = draw_survey_plan(info, result)
-        filename = f"SurveyPlan_{info['file_no'].replace('/', '-')}.pdf"
-        return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+        fname = info["file_no"].replace("/", "-")
+        filename = "SurveyPlan_" + fname + ".pdf"
+        return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=" + filename})
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
