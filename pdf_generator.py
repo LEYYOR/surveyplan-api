@@ -119,7 +119,7 @@ def _draw_main_sketch(c, result, info, sx, sy, sw, sh):
     re_ = maxe - mine or 1
     rn = maxn - minn or 1
     pad = 12*mm
-    scale = min((sw-2*pad)/re_, (sh-2*pad)/rn)
+    scale= min((sw-2*pad)/max(re_,0.001), (sh-2*pad)/max(rn,0.001))
     def tx(e): return sx+pad+(e-mine)*scale
     def ty(n): return sy+pad+(n-minn)*scale
     ax, ay = sx+sw-10*mm, sy+sh-8*mm
