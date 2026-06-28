@@ -1,0 +1,146 @@
+import math
+from datetime import date
+
+def draw_survey_svg(info, result):
+    W, H = 794, 1123  # A4 at 96dpi
+    coords = result["coordinates"]
+    rows = result["rows"]
+
+    es = [p["easting"] for p in coords]
+    ns = [p["northing"] for p in coords]
+    mine, maxe = min(es), max(es)
+    minn, maxn = min(ns), max(ns)
+    re_ = max(maxe - mine, 1)
+    rn = max(maxn - minn, 1)
+
+    sketch_x, sketch_y = 40, 280
+    sketch_w, sketch_h = 714, 580
+    pad = 50
+    scale = min((sketch_w - 2*pad) / re_, (sketch_h - 2*pad) / rn)
+
+    def tx(e): return sketch_x + pad + (e - mine) * scale
+    def ty(n): return sketch_y + sketch_h - pad - (n - minn) * scale
+
+    lines = []
+    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">')
+    lines.append('<rect width="100%" height="100%" fill="white"/>')
+
+    # Outer border
+    lines.append(f'<rect x="10" y="10" width="{W-20}" height="{H-20}" fill="none" stroke="black" stroke-width="3"/>')
+    lines.append(f'<rect x="14" y="14" width="{W-28}" height="{H-28}" fill="none" stroke="black" stroke-width="1"/>')
+
+    # Title
+    cy = 35
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">PLAN SHEWING PROPERTY OF</text>')
+    cy += 18
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="black">{info.get("client_name","").upper()}</text>')
+    cy += 16
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="black">AT {info.get("plot_address","").upper()}</text>')
+    cy += 14
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="black">{info.get("locality","").upper()}</text>')
+    cy += 14
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="black">{info.get("state","").upper()}</text>')
+    cy += 14
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">SCALE : {info.get("scale","1:1000")}</text>')
+    cy += 10
+    lines.append(f'<line x1="{W//2-80}" y1="{cy}" x2="{W//2+80}" y2="{cy}" stroke="black" stroke-width="2"/>')
+    cy += 12
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">ORIGIN : U.T.M (ZONE 31)</text>')
+    cy += 13
+    area_sqm = result["area_sqm"]
+    area_ha = result["area_ha"]
+    acres = round(area_ha * 2.471, 3)
+    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">AREA : {area_sqm} SQ.METRES ({area_ha} HECTS / {acres} ACRES)</text>')
+
+    # Sketch border
+    lines.append(f'<rect x="{sketch_x}" y="{sketch_y}" width="{sketch_w}" height="{sketch_h}" fill="white" stroke="black" stroke-width="1"/>')
+
+    # North arrow
+    ax, ay = sketch_x + sketch_w - 30, sketch_y + 30
+    lines.append(f'<line x1="{ax}" y1="{ay+25}" x2="{ax}" y2="{ay}" stroke="black" stroke-width="1.5"/>')
+    lines.append(f'<polygon points="{ax},{ay} {ax-6},{ay+15} {ax+6},{ay+15}" fill="black"/>')
+    lines.append(f'<text x="{ax}" y="{ay-5}" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold" fill="black">N</text>')
+
+    # Polygon lines with labels
+    for i, row in enumerate(rows):
+        p1 = coords[i]
+        p2 = coords[i+1] if i+1 < len(coords) else coords[0]
+        x1, y1 = tx(p1["easting"]), ty(p1["northing"])
+        x2, y2 = tx(p2["easting"]), ty(p2["northing"])
+        lines.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="black" stroke-width="1.5"/>')
+        mx, my = (x1+x2)/2, (y1+y2)/2
+        angle = math.degrees(math.atan2(y1-y2, x2-x1))
+        lines.append(f'<text x="{mx:.1f}" y="{my:.1f}" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" fill="black" transform="rotate({-angle:.1f},{mx:.1f},{my:.1f})">{row["bearing"]}</text>')
+        lines.append(f'<text x="{mx:.1f}" y="{my+10:.1f}" text-anchor="middle" font-family="Arial" font-size="7" fill="black" transform="rotate({-angle:.1f},{mx:.1f},{my+10:.1f})">{row["distance"]:.3f}m</text>')
+
+    # Station points and beacon labels
+    beacons = info.get("beacons","").split(",") if info.get("beacons","") else []
+    for i, pt in enumerate(coords):
+        px, py = tx(pt["easting"]), ty(pt["northing"])
+        lines.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="4" fill="black"/>')
+        ox = 8 if px < sketch_x + sketch_w/2 else -45
+        oy = -8 if py > sketch_y + sketch_h/2 else 15
+        beacon = beacons[i].strip() if i < len(beacons) else f"EL{5540+i:04d}HQ"
+        lines.append(f'<text x="{px+ox:.1f}" y="{py+oy:.1f}" font-family="Arial" font-size="7" fill="black">SC/OY</text>')
+        lines.append(f'<text x="{px+ox:.1f}" y="{py+oy+9:.1f}" font-family="Arial" font-size="7" fill="black">{beacon}</text>')
+        lines.append(f'<text x="{px-8:.1f}" y="{py+20:.1f}" font-family="Arial" font-size="9" font-weight="bold" fill="black">{pt["station"]}</text>')
+
+    # Origin coordinates
+    origin_n = info.get("origin_n","")
+    origin_e = info.get("origin_e","")
+    if origin_n and origin_e:
+        lines.append(f'<text x="{sketch_x+5}" y="{sketch_y+sketch_h-15}" font-family="Arial" font-size="8" fill="black">{origin_n}mN</text>')
+        lines.append(f'<text x="{sketch_x+5}" y="{sketch_y+sketch_h-5}" font-family="Arial" font-size="8" fill="black">{origin_e}mE</text>')
+
+    # Bottom block
+    bot_y = sketch_y + sketch_h + 5
+    col2_x = W//2 - 80
+    col3_x = W//2 + 80
+    lines.append(f'<line x1="20" y1="{bot_y}" x2="{W-20}" y2="{bot_y}" stroke="black" stroke-width="1"/>')
+    lines.append(f'<line x1="{col2_x}" y1="{bot_y}" x2="{col2_x}" y2="{H-20}" stroke="black" stroke-width="0.5"/>')
+    lines.append(f'<line x1="{col3_x}" y1="{bot_y}" x2="{col3_x}" y2="{H-20}" stroke="black" stroke-width="0.5"/>')
+
+    # Firm details
+    fy = bot_y + 18
+    lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="9" font-weight="bold" fill="black">{info.get("surveyor_name","").upper()}</text>')
+    fy += 13
+    office = info.get("office_address","")
+    for line in office.split(",")[:6]:
+        lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="8" fill="black">{line.strip()}</text>')
+        fy += 11
+    if info.get("email",""):
+        lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="8" fill="black">E-MAIL :- {info.get("email","")}</text>')
+        fy += 11
+    if info.get("phone",""):
+        lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="8" fill="black">PHONE NO :- {info.get("phone","")}</text>')
+
+    # File number
+    lines.append(f'<text x="25" y="{H-25}" font-family="Arial" font-size="11" font-weight="bold" fill="black">{info.get("file_no","").replace("/", " / ")}</text>')
+
+    # Seal
+    cx_seal = (col2_x + col3_x) // 2
+    cy_seal = bot_y + 60
+    lines.append(f'<circle cx="{cx_seal}" cy="{cy_seal}" r="45" fill="none" stroke="black" stroke-width="1.5"/>')
+    lines.append(f'<circle cx="{cx_seal}" cy="{cy_seal}" r="38" fill="none" stroke="black" stroke-width="1"/>')
+    lines.append(f'<text x="{cx_seal}" y="{cy_seal-10}" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" fill="black">OFFICIAL SEAL</text>')
+    lines.append(f'<text x="{cx_seal}" y="{cy_seal+5}" text-anchor="middle" font-family="Arial" font-size="7" fill="black">REG. NO.</text>')
+
+    # Certification
+    cx = col3_x + 10
+    cy = bot_y + 18
+    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">Certified True Copy of Original</text>')
+    cy += 12
+    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">Plan made by me</text>')
+    cy += 35
+    lines.append(f'<line x1="{cx}" y1="{cy}" x2="{W-25}" y2="{cy}" stroke="black" stroke-width="0.8"/>')
+    cy += 14
+    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="9" font-weight="bold" fill="black">{info.get("surveyor_name","")[:30]}</text>')
+    cy += 13
+    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">(FNIS)</text>')
+    cy += 12
+    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">SURVEYOR</text>')
+    cy += 12
+    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">{info.get("survey_date","")}</text>')
+
+    lines.append('</svg>')
+    return "\n".join(lines)
