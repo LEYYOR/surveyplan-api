@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import traceback
 from compute import compute_traverse
 from pdf_generator import draw_survey_plan
@@ -21,11 +21,11 @@ class SurveyInfo(BaseModel):
     plot_address: str
     locality: str
     file_no: str
-    purpose: str = "Certificate of Occupancy"
-    scale: str = "1:500"
+    purpose: Optional[str] = "Certificate of Occupancy"
+    scale: Optional[str] = "1:500"
     survey_date: str
-    state: str = "Oyo State"
-    lga: str = ""
+    state: Optional[str] = "Oyo State"
+    lga: Optional[str] = ""
 
 class GeneratePlanRequest(BaseModel):
     survey_info: SurveyInfo
@@ -42,12 +42,12 @@ def health():
 @app.post("/generate-plan")
 def generate_plan(request: GeneratePlanRequest):
     try:
-        points = [p.model_dump() for p in request.traverse_points]
+        points = [p.dict() for p in request.traverse_points]
         result = compute_traverse(points)
-        info = request.survey_info.model_dump()
+        info = request.survey_info.dict()
         pdf_bytes = draw_survey_plan(info, result)
         filename = f"SurveyPlan_{info['file_no'].replace('/', '-')}.pdf"
         return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{filename}"'})
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))code=500, detail=str(e))
