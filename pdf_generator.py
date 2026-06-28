@@ -7,10 +7,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 
-NAVY  = HexColor("#00008B")
 BLACK = colors.black
 WHITE = colors.white
-LGREY = HexColor("#f5f5f5")
 
 def draw_survey_plan(info, result):
     buf = io.BytesIO()
@@ -35,7 +33,7 @@ def draw_survey_plan(info, result):
     c.drawCentredString(W/2, ty, info.get("state","").upper())
     ty -= 5*mm
     c.setFont("Helvetica", 7)
-    c.drawCentredString(W/2, ty, "SCALE  :  " + info.get("scale","1:2000"))
+    c.drawCentredString(W/2, ty, "SCALE  :  " + info.get("scale","1:1000"))
     ty -= 3*mm
     c.setLineWidth(2)
     c.line(W/2-20*mm, ty, W/2+20*mm, ty)
@@ -47,7 +45,10 @@ def draw_survey_plan(info, result):
     c.setFont("Helvetica", 7)
     c.drawCentredString(W/2, ty, "ORIGIN : U.T.M (ZONE 31)")
     ty -= 4*mm
-    c.drawCentredString(W/2, ty, f"AREA : {result['area_ha']} HECTS ({round(result['area_ha']*2.471,3)} ACRES)")
+    area_sqm = result["area_sqm"]
+    area_ha = result["area_ha"]
+    acres = round(area_ha * 2.471, 3)
+    c.drawCentredString(W/2, ty, f"AREA : {area_sqm} SQ.METRES ({area_ha} HECTS / {acres} ACRES)")
     ty -= 4*mm
     sketch_top = ty - 2*mm
     sketch_bot = 62*mm
@@ -64,31 +65,36 @@ def draw_survey_plan(info, result):
     c.setLineWidth(0.5)
     c.line(col2_x, 14*mm, col2_x, 62*mm)
     c.line(col3_x, 14*mm, col3_x, 62*mm)
-    fy = 55*mm
+    fy = 57*mm
     c.setFont("Helvetica-Bold", 7); c.setFillColor(BLACK)
     c.drawString(15*mm, fy, info.get("surveyor_name","").upper())
     fy -= 4*mm
     c.setFont("Helvetica", 6)
-    for line in ["SURVEYING & MAPPING CONSULTANTS", info.get("plot_address","")[:40], "OYO STATE, NIGERIA", "FILE NO: "+info.get("file_no",""), "PURPOSE: "+info.get("purpose","")]:
-        c.drawString(15*mm, fy, line); fy -= 3.5*mm
+    office_lines = info.get("office_address", "SURVEYING & MAPPING CONSULTANTS").split(",")
+    for line in office_lines[:5]:
+        c.drawString(15*mm, fy, line.strip())
+        fy -= 3.5*mm
+    c.drawString(15*mm, fy, "FILE NO: " + info.get("file_no",""))
+    fy -= 3.5*mm
+    c.drawString(15*mm, fy, "PURPOSE: " + info.get("purpose",""))
     c.setFont("Helvetica-Bold", 8)
     c.drawString(15*mm, 17*mm, info.get("file_no","").replace("/", " / "))
     cx_seal = (col2_x + col3_x) / 2
-    cy_seal = 35*mm
+    cy_seal = 37*mm
     c.setStrokeColor(BLACK); c.setLineWidth(1)
-    c.circle(cx_seal, cy_seal, 12*mm, fill=0, stroke=1)
-    c.circle(cx_seal, cy_seal, 10*mm, fill=0, stroke=1)
+    c.circle(cx_seal, cy_seal, 13*mm, fill=0, stroke=1)
+    c.circle(cx_seal, cy_seal, 11*mm, fill=0, stroke=1)
     c.setFont("Helvetica-Bold", 5); c.setFillColor(BLACK)
     c.drawCentredString(cx_seal, cy_seal+4*mm, "OFFICIAL SEAL")
     c.setFont("Helvetica", 5)
     c.drawCentredString(cx_seal, cy_seal, "REG. NO.")
     cert_x = col3_x + 2*mm
     cert_y = 57*mm
-    c.setFont("Helvetica", 6)
+    c.setFont("Helvetica", 6); c.setFillColor(BLACK)
     c.drawString(cert_x, cert_y, "Certified True Copy of Original")
     cert_y -= 4*mm
     c.drawString(cert_x, cert_y, "Plan made by me")
-    cert_y -= 10*mm
+    cert_y -= 12*mm
     c.setLineWidth(0.5)
     c.line(cert_x, cert_y, W-14*mm, cert_y)
     cert_y -= 5*mm
@@ -116,12 +122,12 @@ def _draw_main_sketch(c, result, info, sx, sy, sw, sh):
     ns = [p["northing"] for p in coords]
     mine, maxe = min(es), max(es)
     minn, maxn = min(ns), max(ns)
-    re_ = maxe - mine or 1
-    rn = maxn - minn or 1
-    pad = 12*mm
-    scale= min((sw-2*pad)/max(re_,0.001), (sh-2*pad)/max(rn,0.001))
-    def tx(e): return sx+pad+(e-mine)*scale
-    def ty(n): return sy+pad+(n-minn)*scale
+    re_ = max(maxe - mine, 1)
+    rn = max(maxn - minn, 1)
+    pad = 14*mm
+    scale = min((sw-2*pad)/re_, (sh-2*pad)/rn)
+    def tx(e): return sx + pad + (e - mine) * scale
+    def ty(n): return sy + pad + (n - minn) * scale
     ax, ay = sx+sw-10*mm, sy+sh-8*mm
     c.setStrokeColor(BLACK); c.setFillColor(BLACK); c.setLineWidth(1)
     c.line(ax, ay-8*mm, ax, ay)
@@ -141,20 +147,24 @@ def _draw_main_sketch(c, result, info, sx, sy, sw, sh):
         c.translate(mx,my)
         c.rotate(angle if -90<angle<90 else angle+180)
         c.setFont("Helvetica-Bold",5.5); c.setFillColor(BLACK)
-        c.drawCentredString(0, 2*mm, row["bearing"])
+        c.drawCentredString(0, 2.5*mm, row["bearing"])
         c.setFont("Helvetica",5)
         c.drawCentredString(0, -3*mm, f"{row['distance']:.3f}m")
         c.restoreState()
     for i, pt in enumerate(coords):
         px,py = tx(pt["easting"]),ty(pt["northing"])
         c.setFillColor(BLACK); c.circle(px,py,1.5*mm,fill=1,stroke=0)
-        c.setFont("Helvetica",5); c.setFillColor(BLACK)
         ox = 3*mm if px < sx+sw/2 else -10*mm
         oy = 2*mm if py < sy+sh/2 else -5*mm
+        c.setFont("Helvetica",5); c.setFillColor(BLACK)
+        beacon = info.get("beacons","").split(",")[i].strip() if info.get("beacons","") and i < len(info.get("beacons","").split(",")) else f"EL{5540+i:04d}HQ"
         c.drawString(px+ox, py+oy, "SC/OY")
-        c.drawString(px+ox, py+oy-3*mm, f"EL{4420+i:04d}HQ")
+        c.drawString(px+ox, py+oy-3*mm, beacon)
         c.setFont("Helvetica-Bold",6)
         c.drawString(px-4*mm, py-5*mm, pt["station"])
-    c.setFont("Helvetica",5.5); c.setFillColor(BLACK)
-    c.drawString(sx+2*mm, sy+3*mm, "622474.999mE")
-    c.drawString(sx+2*mm, sy+7*mm, "829416.993mN")
+    origin_n = info.get("origin_n","")
+    origin_e = info.get("origin_e","")
+    if origin_n and origin_e:
+        c.setFont("Helvetica",5.5); c.setFillColor(BLACK)
+        c.drawString(sx+2*mm, sy+7*mm, origin_n+"mN")
+        c.drawString(sx+2*mm, sy+3*mm, origin_e+"mE")
