@@ -30,9 +30,10 @@ tbody input{padding:5px 6px;border:1.5px solid #d0dce8;border-radius:4px;font-si
 tbody input:focus{border-color:#c47c2b;outline:none;}
 .btn-remove{background:#fee2e2;color:#b91c1c;border:none;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:15px;font-weight:bold;margin:auto;display:flex;align-items:center;justify-content:center;}
 .btn-add-row{margin-top:10px;padding:8px 14px;background:none;border:1.5px dashed #1a3a5c;border-radius:6px;color:#1a3a5c;font-size:12px;font-weight:600;cursor:pointer;width:100%;}
-.generate-wrap{text-align:center;padding:8px 0;}
+.generate-wrap{text-align:center;padding:8px 0;display:flex;flex-direction:column;gap:10px;}
 .btn-generate{padding:14px 40px;background:#c47c2b;color:white;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:10px;width:100%;justify-content:center;}
-.btn-generate:disabled{background:#9aabb8;cursor:not-allowed;}
+.btn-svg{padding:14px 40px;background:#1a3a5c;color:white;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:10px;width:100%;justify-content:center;}
+.btn-generate:disabled,.btn-svg:disabled{background:#9aabb8;cursor:not-allowed;}
 .status{text-align:center;font-size:13px;margin-top:10px;min-height:20px;font-weight:600;}
 .status.loading{color:#1a3a5c;}
 .status.success{color:#166534;}
@@ -46,71 +47,69 @@ tbody input:focus{border-color:#c47c2b;outline:none;}
 <body>
 <header>
 <div class="logo">⊕</div>
-<div><h1>SurveyPlan Pro</h1><p>Enter survey data — PDF downloads automatically</p></div>
+<div><h1>SurveyPlan Pro</h1><p>Enter survey data — PDF or editable SVG downloads automatically</p></div>
 </header>
 <main>
-
 <div class="card">
 <div class="card-title">Land / Plot Information</div>
 <div class="fields-grid">
-<div class="field full"><label>Owner / Client Name</label><input type="text" id="client_name" placeholder="MOSES OLUTUNDE MORA"/></div>
-<div class="field full"><label>Address of Land</label><input type="text" id="plot_address" placeholder="AT PAKITI VILLAGE, OFF OLORUNDA AREA"/></div>
-<div class="field full"><label>Locality / LGA</label><input type="text" id="locality" placeholder="LAGELU LOCAL GOVERNMENT AREA"/></div>
-<div class="field"><label>State</label><input type="text" id="state" placeholder="OYO STATE"/></div>
-<div class="field"><label>File Number</label><input type="text" id="file_no" placeholder="OY/1756/2024/35"/></div>
-<div class="field"><label>Purpose</label><input type="text" id="purpose" placeholder="COFO"/></div>
-<div class="field"><label>Scale</label><input type="text" id="scale" value="1:1000"/></div>
+<div class="field full"><label>Owner / Client Name</label><input type="text" id="client_name"/></div>
+<div class="field full"><label>Address of Land</label><input type="text" id="plot_address"/></div>
+<div class="field full"><label>Locality / LGA</label><input type="text" id="locality"/></div>
+<div class="field"><label>State</label><input type="text" id="state"/></div>
+<div class="field"><label>File Number</label><input type="text" id="file_no"/></div>
+<div class="field"><label>Purpose</label><input type="text" id="purpose"/></div>
+<div class="field"><label>Scale</label><input type="text" id="scale"/></div>
 <div class="field"><label>Date of Survey</label><input type="date" id="survey_date"/></div>
-<div class="field"><label>Origin Northing (mN)</label><input type="text" id="origin_n" placeholder="831838.423"/></div>
-<div class="field"><label>Origin Easting (mE)</label><input type="text" id="origin_e" placeholder="609048.433"/></div>
+<div class="field"><label>Origin Northing (mN)</label><input type="text" id="origin_n"/></div>
+<div class="field"><label>Origin Easting (mE)</label><input type="text" id="origin_e"/></div>
 </div>
 </div>
-
 <div class="card">
 <div class="card-title">Surveyor / Firm Information</div>
 <div class="fields-grid">
-<div class="field full"><label>Surveyor / Firm Name</label><input type="text" id="surveyor_name" placeholder="DASFADS SURVEYS NIGERIA LTD"/></div>
+<div class="field full"><label>Surveyor / Firm Name</label><input type="text" id="surveyor_name"/></div>
 <div class="field full"><label>Office Address (separate lines with comma)</label>
-<textarea id="office_address" placeholder="SURVEYING & MAPPING CONSULTANTS, IMAFAM SHOPPING COMPLEX, IWO-ROAD OJOO EXPRESS WAY, BESIDE POPLAT PETROL STATION, CELE B. / STOP IWO ROAD IBADAN, OYO STATE NIGERIA"></textarea>
+<textarea id="office_address"></textarea>
 </div>
-<div class="field"><label>Email</label><input type="text" id="email" placeholder="dasfads2@yahoo.com"/></div>
-<div class="field"><label>Phone Number(s)</label><input type="text" id="phone" placeholder="08035767243, 08076597511"/></div>
+<div class="field"><label>Email</label><input type="text" id="email"/></div>
+<div class="field"><label>Phone Number(s)</label><input type="text" id="phone"/></div>
 </div>
 </div>
-
 <div class="card">
 <div class="card-title">Traverse Stations</div>
-<p class="hint">Bearing format: <strong>58 16</strong> (degrees minutes) &nbsp;|&nbsp; Distance in metres</p>
+<p class="hint">Bearing format: <strong>58 16</strong> (degrees minutes) | Distance in metres</p>
 <table>
 <thead><tr><th>Stn</th><th>Beacon</th><th>Bearing</th><th>Dist (m)</th><th></th></tr></thead>
 <tbody id="traverse-body"></tbody>
 </table>
 <button class="btn-add-row" onclick="addRow()">+ Add Station</button>
 </div>
-
 <div class="generate-wrap">
-<button class="btn-generate" id="gen-btn" onclick="generatePlan()">
-<span id="btn-icon">📄</span><span id="btn-text">Generate Plan</span>
+<button class="btn-generate" id="gen-btn" onclick="generatePlan('pdf')">
+<span>📄</span><span>Generate PDF Plan</span>
+</button>
+<button class="btn-svg" id="gen-btn2" onclick="generatePlan('svg')">
+<span>✏️</span><span>Generate SVG (Editable)</span>
 </button>
 <div class="status" id="status-msg"></div>
 </div>
 </main>
-
 <script>
 document.getElementById('survey_date').value=new Date().toISOString().slice(0,10);
 let rowCount=0;
-function addRow(d={}){
+function addRow(){
   rowCount++;
   const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const stn=d.station||letters[(rowCount-1)%26];
+  const stn=letters[(rowCount-1)%26];
   const tr=document.createElement('tr');
   tr.id='row-'+rowCount;
-  tr.innerHTML='<td><input type="text" value="'+stn+'" style="width:35px;font-weight:700;color:#c47c2b;text-align:center;"/></td><td><input type="text" value="'+(d.beacon||'')+'" placeholder="EX5542HQ" style="width:80px;font-size:10px;"/></td><td><input type="text" value="'+(d.bearing||'')+'" placeholder="58 16"/></td><td><input type="text" value="'+(d.distance||'')+'" placeholder="0.000" style="text-align:right;"/></td><td><button class="btn-remove" onclick="this.closest(\'tr\').remove()">×</button></td>';
+  tr.innerHTML='<td><input type="text" value="'+stn+'" style="width:35px;font-weight:700;color:#c47c2b;text-align:center;"/></td><td><input type="text" value="" style="width:80px;font-size:10px;"/></td><td><input type="text" value=""/></td><td><input type="text" value="" style="text-align:right;"/></td><td><button class="btn-remove" onclick="this.closest(\'tr\').remove()">x</button></td>';
   document.getElementById('traverse-body').appendChild(tr);
 }
-async function generatePlan(){
-  const beacons=[];
-  const points=[];
+addRow();
+async function generatePlan(format){
+  const beacons=[];const points=[];
   document.querySelectorAll('#traverse-body tr').forEach(tr=>{
     const inputs=tr.querySelectorAll('input');
     const station=inputs[0].value.trim();
@@ -139,31 +138,27 @@ async function generatePlan(){
   };
   if(!info.client_name){document.getElementById('status-msg').className='status error';document.getElementById('status-msg').textContent='Please enter client name.';return;}
   if(points.length<3){document.getElementById('status-msg').className='status error';document.getElementById('status-msg').textContent='Please enter at least 3 stations.';return;}
-  const btn=document.getElementById('gen-btn');
+  const btn=document.getElementById(format==='svg'?'gen-btn2':'gen-btn');
   btn.disabled=true;
-  document.getElementById('btn-icon').innerHTML='<span class="spinner"></span>';
-  document.getElementById('btn-text').textContent='Generating...';
   document.getElementById('status-msg').className='status loading';
   document.getElementById('status-msg').textContent='Processing your survey data...';
+  const endpoint=format==='svg'?'generate-svg':'generate-plan';
+  const ext=format==='svg'?'svg':'pdf';
   try{
-    const response=await fetch('https://surveyplan-api.onrender.com/generate-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({survey_info:info,traverse_points:points})});
+    const response=await fetch('https://surveyplan-api.onrender.com/'+endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({survey_info:info,traverse_points:points})});
     if(!response.ok)throw new Error('Server error. Please try again.');
     const blob=await response.blob();
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
-    a.download='SurveyPlan_'+(info.file_no||'plan').replace(/\//g,'-')+'.pdf';
+    a.download='SurveyPlan_'+(info.file_no||'plan').replace(/\//g,'-')+'.'+ext;
     a.click();
     URL.revokeObjectURL(url);
     document.getElementById('status-msg').className='status success';
     document.getElementById('status-msg').textContent='Plan generated! Check your downloads.';
-    document.getElementById('btn-icon').textContent='✅';
-    document.getElementById('btn-text').textContent='Generate Plan';
   }catch(err){
     document.getElementById('status-msg').className='status error';
     document.getElementById('status-msg').textContent='Error: '+err.message;
-    document.getElementById('btn-icon').textContent='📄';
-    document.getElementById('btn-text').textContent='Generate Plan';
   }
   btn.disabled=false;
 }
