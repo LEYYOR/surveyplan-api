@@ -7,90 +7,154 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
 
-NAVY = HexColor("#1a3a5c")
-GOLD = HexColor("#c47c2b")
-LIGHT_GREY = HexColor("#f0f4f8")
-MID_GREY = HexColor("#d0dce8")
+NAVY  = HexColor("#00008B")
+BLACK = colors.black
+WHITE = colors.white
+LGREY = HexColor("#f5f5f5")
 
-def draw_survey_plan(survey_info, traverse_result):
-    buffer = io.BytesIO()
+def draw_survey_plan(info, result):
+    buf = io.BytesIO()
     W, H = A4
-    c = canvas.Canvas(buffer, pagesize=A4)
-    c.setStrokeColor(NAVY)
-    c.setLineWidth(3)
-    c.rect(10*mm, 10*mm, W-20*mm, H-20*mm)
-    c.setFillColor(NAVY)
-    c.rect(12*mm, H-38*mm, W-24*mm, 22*mm, fill=1, stroke=0)
-    c.setFillColor(colors.white)
+    c = canvas.Canvas(buf, pagesize=A4)
+    c.setStrokeColor(BLACK); c.setLineWidth(3)
+    c.rect(8*mm, 8*mm, W-16*mm, H-16*mm)
+    c.setLineWidth(1)
+    c.rect(11*mm, 11*mm, W-22*mm, H-22*mm)
+    ty = H - 14*mm
+    c.setFont("Helvetica", 7); c.setFillColor(BLACK)
+    c.drawCentredString(W/2, ty, "PLAN SHEWING PROPERTY OF")
+    ty -= 5*mm
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(W/2, ty, info.get("client_name","").upper())
+    ty -= 5*mm
     c.setFont("Helvetica-Bold", 7)
-    c.drawCentredString(W/2, H-20*mm, "FEDERAL REPUBLIC OF NIGERIA")
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(W/2, H-27*mm, survey_info.get("state","").upper())
-    c.setFont("Helvetica", 8)
-    c.drawCentredString(W/2, H-33*mm, f"Survey Plan of Land at {survey_info.get('locality','')}")
-    y = H-44*mm
-    c.setStrokeColor(GOLD)
-    c.setLineWidth(1.5)
-    c.line(12*mm, y, W-12*mm, y)
-    y -= 6*mm
-    c.setFont("Helvetica-Bold", 8)
-    c.setFillColor(NAVY)
-    c.drawString(14*mm, y, "SURVEY DETAILS")
-    y -= 6*mm
-    fields = [("Surveyor", survey_info.get("surveyor_name","")), ("Owner", survey_info.get("client_name","")), ("Address", survey_info.get("plot_address","")), ("Locality", survey_info.get("locality","")), ("File No.", survey_info.get("file_no","")), ("Purpose", survey_info.get("purpose","")), ("Scale", survey_info.get("scale","")), ("Date", survey_info.get("survey_date",""))]
-    for label, value in fields:
-        c.setFont("Helvetica-Bold", 7)
-        c.setFillColor(HexColor("#5a6a7a"))
-        c.drawString(14*mm, y, f"{label}:")
-        c.setFont("Helvetica", 7)
-        c.setFillColor(NAVY)
-        c.drawString(45*mm, y, str(value)[:50])
-        y -= 6*mm
-    y -= 4*mm
-    c.setFont("Helvetica-Bold", 8)
-    c.setFillColor(NAVY)
-    c.drawString(14*mm, y, "SCHEDULE OF TRAVERSE")
-    y -= 6*mm
-    headers = ["Stn","Bearing","Dist(m)","Dep(m)","Lat(m)","Easting","Northing"]
-    widths = [12,35,22,22,22,26,26]
-    xs = [14*mm]
-    for w in widths[:-1]:
-        xs.append(xs[-1]+w*mm)
-    c.setFillColor(NAVY)
-    c.rect(14*mm, y-5*mm, sum(widths)*mm, 5*mm, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 6)
-    for i,(h,x) in enumerate(zip(headers,xs)):
-        c.drawCentredString(x+widths[i]*mm/2, y-4*mm, h)
-    y -= 5*mm
-    for idx,row in enumerate(traverse_result["rows"]):
-        c.setFillColor(LIGHT_GREY if idx%2==0 else colors.white)
-        c.rect(14*mm, y-5*mm, sum(widths)*mm, 5*mm, fill=1, stroke=0)
-        vals = [row["station"],row["bearing"],f"{row['distance']:.3f}",f"{row['departure']:.3f}",f"{row['latitude']:.3f}",f"{row['easting']:.3f}",f"{row['northing']:.3f}"]
-        for i,(v,x) in enumerate(zip(vals,xs)):
-            c.setFont("Helvetica-Bold" if i==0 else "Helvetica", 6)
-            c.setFillColor(GOLD if i==0 else NAVY)
-            c.drawCentredString(x+widths[i]*mm/2, y-4*mm, str(v))
-        y -= 5*mm
-    y -= 8*mm
-    for label,val in [("Perimeter",f"{traverse_result['perimeter_m']} m"),("Area",f"{traverse_result['area_sqm']} m² ({traverse_result['area_ha']} Ha)"),("Closure Error",f"{traverse_result['closure_error_m']} m"),("Precision",traverse_result['precision_ratio'])]:
-        c.setFont("Helvetica-Bold", 7)
-        c.setFillColor(HexColor("#5a6a7a"))
-        c.drawString(14*mm, y, f"{label}:")
-        c.setFont("Helvetica", 7)
-        c.setFillColor(NAVY)
-        c.drawString(50*mm, y, str(val))
-        y -= 6*mm
-    y -= 6*mm
-    c.setStrokeColor(NAVY)
+    c.drawCentredString(W/2, ty, "AT " + info.get("plot_address","").upper())
+    ty -= 4*mm
+    c.drawCentredString(W/2, ty, info.get("locality","").upper())
+    ty -= 4*mm
+    c.drawCentredString(W/2, ty, info.get("state","").upper())
+    ty -= 5*mm
+    c.setFont("Helvetica", 7)
+    c.drawCentredString(W/2, ty, "SCALE  :  " + info.get("scale","1:2000"))
+    ty -= 3*mm
+    c.setLineWidth(2)
+    c.line(W/2-20*mm, ty, W/2+20*mm, ty)
+    c.setLineWidth(1)
+    c.line(W/2-20*mm, ty-2*mm, W/2-20*mm, ty)
+    c.line(W/2, ty-2*mm, W/2, ty)
+    c.line(W/2+20*mm, ty-2*mm, W/2+20*mm, ty)
+    ty -= 5*mm
+    c.setFont("Helvetica", 7)
+    c.drawCentredString(W/2, ty, "ORIGIN : U.T.M (ZONE 31)")
+    ty -= 4*mm
+    c.drawCentredString(W/2, ty, f"AREA : {result['area_ha']} HECTS ({round(result['area_ha']*2.471,3)} ACRES)")
+    ty -= 4*mm
+    sketch_top = ty - 2*mm
+    sketch_bot = 62*mm
+    sketch_h = sketch_top - sketch_bot
+    sketch_x = 13*mm
+    sketch_w = W - 26*mm
+    c.setStrokeColor(BLACK); c.setLineWidth(0.5)
+    c.rect(sketch_x, sketch_bot, sketch_w, sketch_h)
+    _draw_main_sketch(c, result, info, sketch_x, sketch_bot, sketch_w, sketch_h)
+    c.setLineWidth(1); c.setStrokeColor(BLACK)
+    c.line(13*mm, 62*mm, W-13*mm, 62*mm)
+    col2_x = W/2 - 20*mm
+    col3_x = W/2 + 20*mm
     c.setLineWidth(0.5)
-    c.line(14*mm, y, W-14*mm, y)
-    y -= 4*mm
+    c.line(col2_x, 14*mm, col2_x, 62*mm)
+    c.line(col3_x, 14*mm, col3_x, 62*mm)
+    fy = 55*mm
+    c.setFont("Helvetica-Bold", 7); c.setFillColor(BLACK)
+    c.drawString(15*mm, fy, info.get("surveyor_name","").upper())
+    fy -= 4*mm
     c.setFont("Helvetica", 6)
-    c.setFillColor(HexColor("#888888"))
-    c.drawString(14*mm, y, f"File No: {survey_info.get('file_no','')}")
-    c.drawCentredString(W/2, y, "Generated by SurveyPlan Pro")
-    c.drawRightString(W-14*mm, y, f"Date: {date.today().strftime('%d %B %Y')}")
-    c.save()
-    buffer.seek(0)
-    return buffer.read()
+    for line in ["SURVEYING & MAPPING CONSULTANTS", info.get("plot_address","")[:40], "OYO STATE, NIGERIA", "FILE NO: "+info.get("file_no",""), "PURPOSE: "+info.get("purpose","")]:
+        c.drawString(15*mm, fy, line); fy -= 3.5*mm
+    c.setFont("Helvetica-Bold", 8)
+    c.drawString(15*mm, 17*mm, info.get("file_no","").replace("/", " / "))
+    cx_seal = (col2_x + col3_x) / 2
+    cy_seal = 35*mm
+    c.setStrokeColor(BLACK); c.setLineWidth(1)
+    c.circle(cx_seal, cy_seal, 12*mm, fill=0, stroke=1)
+    c.circle(cx_seal, cy_seal, 10*mm, fill=0, stroke=1)
+    c.setFont("Helvetica-Bold", 5); c.setFillColor(BLACK)
+    c.drawCentredString(cx_seal, cy_seal+4*mm, "OFFICIAL SEAL")
+    c.setFont("Helvetica", 5)
+    c.drawCentredString(cx_seal, cy_seal, "REG. NO.")
+    cert_x = col3_x + 2*mm
+    cert_y = 57*mm
+    c.setFont("Helvetica", 6)
+    c.drawString(cert_x, cert_y, "Certified True Copy of Original")
+    cert_y -= 4*mm
+    c.drawString(cert_x, cert_y, "Plan made by me")
+    cert_y -= 10*mm
+    c.setLineWidth(0.5)
+    c.line(cert_x, cert_y, W-14*mm, cert_y)
+    cert_y -= 5*mm
+    c.setFont("Helvetica-Bold", 7)
+    c.drawString(cert_x, cert_y, info.get("surveyor_name","")[:30])
+    cert_y -= 4*mm
+    c.setFont("Helvetica", 6)
+    c.drawString(cert_x, cert_y, "(FNIS)")
+    cert_y -= 4*mm
+    c.drawString(cert_x, cert_y, "SURVEYOR")
+    cert_y -= 4*mm
+    c.drawString(cert_x, cert_y, info.get("survey_date",""))
+    c.setLineWidth(0.5)
+    c.line(13*mm, 14*mm, W-13*mm, 14*mm)
+    c.setFont("Helvetica", 5.5); c.setFillColor(HexColor("#888888"))
+    c.drawCentredString(W/2, 11*mm, "Generated by SurveyPlan Pro")
+    c.save(); buf.seek(0)
+    return buf.read()
+
+def _draw_main_sketch(c, result, info, sx, sy, sw, sh):
+    coords = result["coordinates"]
+    rows = result["rows"]
+    if len(coords) < 2: return
+    es = [p["easting"] for p in coords]
+    ns = [p["northing"] for p in coords]
+    mine, maxe = min(es), max(es)
+    minn, maxn = min(ns), max(ns)
+    re_ = maxe - mine or 1
+    rn = maxn - minn or 1
+    pad = 12*mm
+    scale = min((sw-2*pad)/re_, (sh-2*pad)/rn)
+    def tx(e): return sx+pad+(e-mine)*scale
+    def ty(n): return sy+pad+(n-minn)*scale
+    ax, ay = sx+sw-10*mm, sy+sh-8*mm
+    c.setStrokeColor(BLACK); c.setFillColor(BLACK); c.setLineWidth(1)
+    c.line(ax, ay-8*mm, ax, ay)
+    p = c.beginPath(); p.moveTo(ax,ay); p.lineTo(ax-2*mm,ay-5*mm); p.lineTo(ax+2*mm,ay-5*mm); p.close()
+    c.drawPath(p, fill=1, stroke=0)
+    c.setFont("Helvetica-Bold", 8); c.drawCentredString(ax, ay+2*mm, "N")
+    c.setStrokeColor(BLACK); c.setLineWidth(1.2)
+    for i, row in enumerate(rows):
+        p1 = coords[i]
+        p2 = coords[i+1] if i+1 < len(coords) else coords[0]
+        x1,y1 = tx(p1["easting"]),ty(p1["northing"])
+        x2,y2 = tx(p2["easting"]),ty(p2["northing"])
+        c.line(x1,y1,x2,y2)
+        mx,my = (x1+x2)/2,(y1+y2)/2
+        angle = math.degrees(math.atan2(y2-y1,x2-x1))
+        c.saveState()
+        c.translate(mx,my)
+        c.rotate(angle if -90<angle<90 else angle+180)
+        c.setFont("Helvetica-Bold",5.5); c.setFillColor(BLACK)
+        c.drawCentredString(0, 2*mm, row["bearing"])
+        c.setFont("Helvetica",5)
+        c.drawCentredString(0, -3*mm, f"{row['distance']:.3f}m")
+        c.restoreState()
+    for i, pt in enumerate(coords):
+        px,py = tx(pt["easting"]),ty(pt["northing"])
+        c.setFillColor(BLACK); c.circle(px,py,1.5*mm,fill=1,stroke=0)
+        c.setFont("Helvetica",5); c.setFillColor(BLACK)
+        ox = 3*mm if px < sx+sw/2 else -10*mm
+        oy = 2*mm if py < sy+sh/2 else -5*mm
+        c.drawString(px+ox, py+oy, "SC/OY")
+        c.drawString(px+ox, py+oy-3*mm, f"EL{4420+i:04d}HQ")
+        c.setFont("Helvetica-Bold",6)
+        c.drawString(px-4*mm, py-5*mm, pt["station"])
+    c.setFont("Helvetica",5.5); c.setFillColor(BLACK)
+    c.drawString(sx+2*mm, sy+3*mm, "622474.999mE")
+    c.drawString(sx+2*mm, sy+7*mm, "829416.993mN")
