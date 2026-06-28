@@ -70,13 +70,17 @@ def draw_survey_plan(info, result):
     c.drawString(15*mm, fy, info.get("surveyor_name","").upper())
     fy -= 4*mm
     c.setFont("Helvetica", 6)
-    office_lines = info.get("office_address", "SURVEYING & MAPPING CONSULTANTS").split(",")
-    for line in office_lines[:5]:
+    office = info.get("office_address", "")
+    for line in office.split(",")[:6]:
         c.drawString(15*mm, fy, line.strip())
         fy -= 3.5*mm
-    c.drawString(15*mm, fy, "FILE NO: " + info.get("file_no",""))
-    fy -= 3.5*mm
-    c.drawString(15*mm, fy, "PURPOSE: " + info.get("purpose",""))
+    email = info.get("email","")
+    phone = info.get("phone","")
+    if email:
+        c.drawString(15*mm, fy, "E-MAIL :- " + email)
+        fy -= 3.5*mm
+    if phone:
+        c.drawString(15*mm, fy, "PHONE NO :- " + phone)
     c.setFont("Helvetica-Bold", 8)
     c.drawString(15*mm, 17*mm, info.get("file_no","").replace("/", " / "))
     cx_seal = (col2_x + col3_x) / 2
@@ -131,40 +135,42 @@ def _draw_main_sketch(c, result, info, sx, sy, sw, sh):
     ax, ay = sx+sw-10*mm, sy+sh-8*mm
     c.setStrokeColor(BLACK); c.setFillColor(BLACK); c.setLineWidth(1)
     c.line(ax, ay-8*mm, ax, ay)
-    p = c.beginPath(); p.moveTo(ax,ay); p.lineTo(ax-2*mm,ay-5*mm); p.lineTo(ax+2*mm,ay-5*mm); p.close()
+    p = c.beginPath()
+    p.moveTo(ax, ay); p.lineTo(ax-2*mm, ay-5*mm); p.lineTo(ax+2*mm, ay-5*mm); p.close()
     c.drawPath(p, fill=1, stroke=0)
     c.setFont("Helvetica-Bold", 8); c.drawCentredString(ax, ay+2*mm, "N")
     c.setStrokeColor(BLACK); c.setLineWidth(1.2)
     for i, row in enumerate(rows):
         p1 = coords[i]
         p2 = coords[i+1] if i+1 < len(coords) else coords[0]
-        x1,y1 = tx(p1["easting"]),ty(p1["northing"])
-        x2,y2 = tx(p2["easting"]),ty(p2["northing"])
-        c.line(x1,y1,x2,y2)
-        mx,my = (x1+x2)/2,(y1+y2)/2
-        angle = math.degrees(math.atan2(y2-y1,x2-x1))
+        x1, y1 = tx(p1["easting"]), ty(p1["northing"])
+        x2, y2 = tx(p2["easting"]), ty(p2["northing"])
+        c.line(x1, y1, x2, y2)
+        mx, my = (x1+x2)/2, (y1+y2)/2
+        angle = math.degrees(math.atan2(y2-y1, x2-x1))
         c.saveState()
-        c.translate(mx,my)
-        c.rotate(angle if -90<angle<90 else angle+180)
-        c.setFont("Helvetica-Bold",5.5); c.setFillColor(BLACK)
+        c.translate(mx, my)
+        c.rotate(angle if -90 < angle < 90 else angle+180)
+        c.setFont("Helvetica-Bold", 5.5); c.setFillColor(BLACK)
         c.drawCentredString(0, 2.5*mm, row["bearing"])
-        c.setFont("Helvetica",5)
+        c.setFont("Helvetica", 5)
         c.drawCentredString(0, -3*mm, f"{row['distance']:.3f}m")
         c.restoreState()
+    beacons = info.get("beacons","").split(",") if info.get("beacons","") else []
     for i, pt in enumerate(coords):
-        px,py = tx(pt["easting"]),ty(pt["northing"])
-        c.setFillColor(BLACK); c.circle(px,py,1.5*mm,fill=1,stroke=0)
+        px, py = tx(pt["easting"]), ty(pt["northing"])
+        c.setFillColor(BLACK); c.circle(px, py, 1.5*mm, fill=1, stroke=0)
         ox = 3*mm if px < sx+sw/2 else -10*mm
         oy = 2*mm if py < sy+sh/2 else -5*mm
-        c.setFont("Helvetica",5); c.setFillColor(BLACK)
-        beacon = info.get("beacons","").split(",")[i].strip() if info.get("beacons","") and i < len(info.get("beacons","").split(",")) else f"EL{5540+i:04d}HQ"
+        beacon = beacons[i].strip() if i < len(beacons) else f"EL{5540+i:04d}HQ"
+        c.setFont("Helvetica", 5); c.setFillColor(BLACK)
         c.drawString(px+ox, py+oy, "SC/OY")
         c.drawString(px+ox, py+oy-3*mm, beacon)
-        c.setFont("Helvetica-Bold",6)
+        c.setFont("Helvetica-Bold", 6)
         c.drawString(px-4*mm, py-5*mm, pt["station"])
     origin_n = info.get("origin_n","")
     origin_e = info.get("origin_e","")
     if origin_n and origin_e:
-        c.setFont("Helvetica",5.5); c.setFillColor(BLACK)
+        c.setFont("Helvetica", 5.5); c.setFillColor(BLACK)
         c.drawString(sx+2*mm, sy+7*mm, origin_n+"mN")
         c.drawString(sx+2*mm, sy+3*mm, origin_e+"mE")
