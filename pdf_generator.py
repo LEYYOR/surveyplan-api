@@ -163,11 +163,15 @@ def _draw_main_sketch(c, result, info, sx, sy, sw, sh):
     minn, maxn = min(ns), max(ns)
     re_ = max(maxe - mine, 1)
     rn = max(maxn - minn, 1)
-    pad = 14*mm
-    scale = min((sw-2*pad)/re_, (sh-2*pad)/rn)
-    def tx(e): return sx + pad + (e - mine) * scale
-    def ty(n): return sy + pad + (n - minn) * scale
-
+   pad_left = 14*mm
+pad_right = 14*mm
+pad_top = 14*mm
+pad_bottom = 45*mm
+usable_w = sw - pad_left - pad_right
+usable_h = sh - pad_top - pad_bottom
+scale = min(usable_w/re_, usable_h/rn)
+   def tx(e): return sx + pad_left + (e - mine) * scale
+def ty(n): return sy + pad_bottom + (n - minn) * scale
     # North arrow
     ax, ay = sx+sw-10*mm, sy+sh-8*mm
     c.setStrokeColor(BLACK); c.setFillColor(BLACK); c.setLineWidth(1)
