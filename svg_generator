@@ -1,146 +1,103 @@
 import math
-from datetime import date
 
 def draw_survey_svg(info, result):
-    W, H = 794, 1123  # A4 at 96dpi
+    W, H = 794, 1123
     coords = result["coordinates"]
     rows = result["rows"]
-
     es = [p["easting"] for p in coords]
     ns = [p["northing"] for p in coords]
     mine, maxe = min(es), max(es)
     minn, maxn = min(ns), max(ns)
     re_ = max(maxe - mine, 1)
     rn = max(maxn - minn, 1)
-
-    sketch_x, sketch_y = 40, 280
-    sketch_w, sketch_h = 714, 580
+    sketch_x, sketch_y = 40, 260
+    sketch_w, sketch_h = 714, 600
     pad = 50
-    scale = min((sketch_w - 2*pad) / re_, (sketch_h - 2*pad) / rn)
-
+    scale = min((sketch_w-2*pad)/re_, (sketch_h-2*pad)/rn)
     def tx(e): return sketch_x + pad + (e - mine) * scale
     def ty(n): return sketch_y + sketch_h - pad - (n - minn) * scale
-
-    lines = []
-    lines.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">')
-    lines.append('<rect width="100%" height="100%" fill="white"/>')
-
-    # Outer border
-    lines.append(f'<rect x="10" y="10" width="{W-20}" height="{H-20}" fill="none" stroke="black" stroke-width="3"/>')
-    lines.append(f'<rect x="14" y="14" width="{W-28}" height="{H-28}" fill="none" stroke="black" stroke-width="1"/>')
-
-    # Title
+    out = []
+    out.append('<svg xmlns="http://www.w3.org/2000/svg" width="{}" height="{}" viewBox="0 0 {} {}">'.format(W,H,W,H))
+    out.append('<rect width="100%" height="100%" fill="white"/>')
+    out.append('<rect x="10" y="10" width="{}" height="{}" fill="none" stroke="black" stroke-width="3"/>'.format(W-20,H-20))
+    out.append('<rect x="14" y="14" width="{}" height="{}" fill="none" stroke="black" stroke-width="1"/>'.format(W-28,H-28))
     cy = 35
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">PLAN SHEWING PROPERTY OF</text>')
-    cy += 18
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold" fill="black">{info.get("client_name","").upper()}</text>')
-    cy += 16
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="black">AT {info.get("plot_address","").upper()}</text>')
-    cy += 14
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="black">{info.get("locality","").upper()}</text>')
-    cy += 14
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold" fill="black">{info.get("state","").upper()}</text>')
-    cy += 14
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">SCALE : {info.get("scale","1:1000")}</text>')
-    cy += 10
-    lines.append(f'<line x1="{W//2-80}" y1="{cy}" x2="{W//2+80}" y2="{cy}" stroke="black" stroke-width="2"/>')
-    cy += 12
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">ORIGIN : U.T.M (ZONE 31)</text>')
-    cy += 13
-    area_sqm = result["area_sqm"]
-    area_ha = result["area_ha"]
-    acres = round(area_ha * 2.471, 3)
-    lines.append(f'<text x="{W//2}" y="{cy}" text-anchor="middle" font-family="Arial" font-size="9" fill="black">AREA : {area_sqm} SQ.METRES ({area_ha} HECTS / {acres} ACRES)</text>')
-
-    # Sketch border
-    lines.append(f'<rect x="{sketch_x}" y="{sketch_y}" width="{sketch_w}" height="{sketch_h}" fill="white" stroke="black" stroke-width="1"/>')
-
-    # North arrow
-    ax, ay = sketch_x + sketch_w - 30, sketch_y + 30
-    lines.append(f'<line x1="{ax}" y1="{ay+25}" x2="{ax}" y2="{ay}" stroke="black" stroke-width="1.5"/>')
-    lines.append(f'<polygon points="{ax},{ay} {ax-6},{ay+15} {ax+6},{ay+15}" fill="black"/>')
-    lines.append(f'<text x="{ax}" y="{ay-5}" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold" fill="black">N</text>')
-
-    # Polygon lines with labels
-    for i, row in enumerate(rows):
-        p1 = coords[i]
-        p2 = coords[i+1] if i+1 < len(coords) else coords[0]
-        x1, y1 = tx(p1["easting"]), ty(p1["northing"])
-        x2, y2 = tx(p2["easting"]), ty(p2["northing"])
-        lines.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" stroke="black" stroke-width="1.5"/>')
-        mx, my = (x1+x2)/2, (y1+y2)/2
-        angle = math.degrees(math.atan2(y1-y2, x2-x1))
-        lines.append(f'<text x="{mx:.1f}" y="{my:.1f}" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" fill="black" transform="rotate({-angle:.1f},{mx:.1f},{my:.1f})">{row["bearing"]}</text>')
-        lines.append(f'<text x="{mx:.1f}" y="{my+10:.1f}" text-anchor="middle" font-family="Arial" font-size="7" fill="black" transform="rotate({-angle:.1f},{mx:.1f},{my+10:.1f})">{row["distance"]:.3f}m</text>')
-
-    # Station points and beacon labels
-    beacons = info.get("beacons","").split(",") if info.get("beacons","") else []
-    for i, pt in enumerate(coords):
-        px, py = tx(pt["easting"]), ty(pt["northing"])
-        lines.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="4" fill="black"/>')
-        ox = 8 if px < sketch_x + sketch_w/2 else -45
-        oy = -8 if py > sketch_y + sketch_h/2 else 15
-        beacon = beacons[i].strip() if i < len(beacons) else f"EL{5540+i:04d}HQ"
-        lines.append(f'<text x="{px+ox:.1f}" y="{py+oy:.1f}" font-family="Arial" font-size="7" fill="black">SC/OY</text>')
-        lines.append(f'<text x="{px+ox:.1f}" y="{py+oy+9:.1f}" font-family="Arial" font-size="7" fill="black">{beacon}</text>')
-        lines.append(f'<text x="{px-8:.1f}" y="{py+20:.1f}" font-family="Arial" font-size="9" font-weight="bold" fill="black">{pt["station"]}</text>')
-
-    # Origin coordinates
-    origin_n = info.get("origin_n","")
-    origin_e = info.get("origin_e","")
-    if origin_n and origin_e:
-        lines.append(f'<text x="{sketch_x+5}" y="{sketch_y+sketch_h-15}" font-family="Arial" font-size="8" fill="black">{origin_n}mN</text>')
-        lines.append(f'<text x="{sketch_x+5}" y="{sketch_y+sketch_h-5}" font-family="Arial" font-size="8" fill="black">{origin_e}mE</text>')
-
-    # Bottom block
-    bot_y = sketch_y + sketch_h + 5
-    col2_x = W//2 - 80
-    col3_x = W//2 + 80
-    lines.append(f'<line x1="20" y1="{bot_y}" x2="{W-20}" y2="{bot_y}" stroke="black" stroke-width="1"/>')
-    lines.append(f'<line x1="{col2_x}" y1="{bot_y}" x2="{col2_x}" y2="{H-20}" stroke="black" stroke-width="0.5"/>')
-    lines.append(f'<line x1="{col3_x}" y1="{bot_y}" x2="{col3_x}" y2="{H-20}" stroke="black" stroke-width="0.5"/>')
-
-    # Firm details
-    fy = bot_y + 18
-    lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="9" font-weight="bold" fill="black">{info.get("surveyor_name","").upper()}</text>')
-    fy += 13
-    office = info.get("office_address","")
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="9">PLAN SHEWING PROPERTY OF</text>'.format(W//2,cy))
+    cy+=18
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="13" font-weight="bold">{}</text>'.format(W//2,cy,info.get("client_name","").upper()))
+    cy+=16
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">AT {}</text>'.format(W//2,cy,info.get("plot_address","").upper()))
+    cy+=14
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">{}</text>'.format(W//2,cy,info.get("locality","").upper()))
+    cy+=14
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="10" font-weight="bold">{}</text>'.format(W//2,cy,info.get("state","").upper()))
+    cy+=14
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="9">SCALE : {}</text>'.format(W//2,cy,info.get("scale","1:1000")))
+    cy+=12
+    out.append('<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" stroke-width="2"/>'.format(W//2-80,cy,W//2+80,cy))
+    cy+=14
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="9">ORIGIN : U.T.M (ZONE 31)</text>'.format(W//2,cy))
+    cy+=13
+    area_sqm=result["area_sqm"]; area_ha=result["area_ha"]; acres=round(area_ha*2.471,3)
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="9">AREA : {} SQ.METRES ({} HECTS / {} ACRES)</text>'.format(W//2,cy,area_sqm,area_ha,acres))
+    out.append('<rect x="{}" y="{}" width="{}" height="{}" fill="white" stroke="black" stroke-width="1"/>'.format(sketch_x,sketch_y,sketch_w,sketch_h))
+    ax=sketch_x+sketch_w-30; ay=sketch_y+30
+    out.append('<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" stroke-width="1.5"/>'.format(ax,ay+25,ax,ay))
+    out.append('<polygon points="{},{} {},{} {},{}" fill="black"/>'.format(ax,ay,ax-6,ay+15,ax+6,ay+15))
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">N</text>'.format(ax,ay-5))
+    for i,row in enumerate(rows):
+        p1=coords[i]; p2=coords[i+1] if i+1<len(coords) else coords[0]
+        x1,y1=tx(p1["easting"]),ty(p1["northing"]); x2,y2=tx(p2["easting"]),ty(p2["northing"])
+        out.append('<line x1="{:.1f}" y1="{:.1f}" x2="{:.1f}" y2="{:.1f}" stroke="black" stroke-width="1.5"/>'.format(x1,y1,x2,y2))
+        mx,my=(x1+x2)/2,(y1+y2)/2
+        angle=math.degrees(math.atan2(y1-y2,x2-x1))
+        out.append('<text x="{:.1f}" y="{:.1f}" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" transform="rotate({:.1f},{:.1f},{:.1f})">{}</text>'.format(mx,my,-angle,mx,my,row["bearing"]))
+        out.append('<text x="{:.1f}" y="{:.1f}" text-anchor="middle" font-family="Arial" font-size="7" transform="rotate({:.1f},{:.1f},{:.1f})">{:.3f}m</text>'.format(mx,my+10,-angle,mx,my+10,row["distance"]))
+    beacons=info.get("beacons","").split(",") if info.get("beacons","") else []
+    for i,pt in enumerate(coords):
+        px,py=tx(pt["easting"]),ty(pt["northing"])
+        out.append('<circle cx="{:.1f}" cy="{:.1f}" r="4" fill="black"/>'.format(px,py))
+        ox=8 if px<sketch_x+sketch_w/2 else -45
+        oy=-8 if py>sketch_y+sketch_h/2 else 15
+        beacon=beacons[i].strip() if i<len(beacons) else "EL{}HQ".format(5540+i)
+        out.append('<text x="{:.1f}" y="{:.1f}" font-family="Arial" font-size="7">SC/OY</text>'.format(px+ox,py+oy))
+        out.append('<text x="{:.1f}" y="{:.1f}" font-family="Arial" font-size="7">{}</text>'.format(px+ox,py+oy+9,beacon))
+        out.append('<text x="{:.1f}" y="{:.1f}" font-family="Arial" font-size="9" font-weight="bold">{}</text>'.format(px-8,py+20,pt["station"]))
+    bot_y=sketch_y+sketch_h+5; col2_x=W//2-80; col3_x=W//2+80
+    out.append('<line x1="20" y1="{}" x2="{}" y2="{}" stroke="black" stroke-width="1"/>'.format(bot_y,W-20,bot_y))
+    out.append('<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" stroke-width="0.5"/>'.format(col2_x,bot_y,col2_x,H-20))
+    out.append('<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" stroke-width="0.5"/>'.format(col3_x,bot_y,col3_x,H-20))
+    fy=bot_y+18
+    out.append('<text x="25" y="{}" font-family="Arial" font-size="9" font-weight="bold">{}</text>'.format(fy,info.get("surveyor_name","").upper()))
+    fy+=13
+    office=info.get("office_address","")
     for line in office.split(",")[:6]:
-        lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="8" fill="black">{line.strip()}</text>')
-        fy += 11
+        out.append('<text x="25" y="{}" font-family="Arial" font-size="8">{}</text>'.format(fy,line.strip()))
+        fy+=11
     if info.get("email",""):
-        lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="8" fill="black">E-MAIL :- {info.get("email","")}</text>')
-        fy += 11
+        out.append('<text x="25" y="{}" font-family="Arial" font-size="8">E-MAIL :- {}</text>'.format(fy,info.get("email","")))
+        fy+=11
     if info.get("phone",""):
-        lines.append(f'<text x="25" y="{fy}" font-family="Arial" font-size="8" fill="black">PHONE NO :- {info.get("phone","")}</text>')
-
-    # File number
-    lines.append(f'<text x="25" y="{H-25}" font-family="Arial" font-size="11" font-weight="bold" fill="black">{info.get("file_no","").replace("/", " / ")}</text>')
-
-    # Seal
-    cx_seal = (col2_x + col3_x) // 2
-    cy_seal = bot_y + 60
-    lines.append(f'<circle cx="{cx_seal}" cy="{cy_seal}" r="45" fill="none" stroke="black" stroke-width="1.5"/>')
-    lines.append(f'<circle cx="{cx_seal}" cy="{cy_seal}" r="38" fill="none" stroke="black" stroke-width="1"/>')
-    lines.append(f'<text x="{cx_seal}" y="{cy_seal-10}" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold" fill="black">OFFICIAL SEAL</text>')
-    lines.append(f'<text x="{cx_seal}" y="{cy_seal+5}" text-anchor="middle" font-family="Arial" font-size="7" fill="black">REG. NO.</text>')
-
-    # Certification
-    cx = col3_x + 10
-    cy = bot_y + 18
-    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">Certified True Copy of Original</text>')
-    cy += 12
-    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">Plan made by me</text>')
-    cy += 35
-    lines.append(f'<line x1="{cx}" y1="{cy}" x2="{W-25}" y2="{cy}" stroke="black" stroke-width="0.8"/>')
-    cy += 14
-    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="9" font-weight="bold" fill="black">{info.get("surveyor_name","")[:30]}</text>')
-    cy += 13
-    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">(FNIS)</text>')
-    cy += 12
-    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">SURVEYOR</text>')
-    cy += 12
-    lines.append(f'<text x="{cx}" y="{cy}" font-family="Arial" font-size="8" fill="black">{info.get("survey_date","")}</text>')
-
-    lines.append('</svg>')
-    return "\n".join(lines)
+        out.append('<text x="25" y="{}" font-family="Arial" font-size="8">PHONE NO :- {}</text>'.format(fy,info.get("phone","")))
+    out.append('<text x="25" y="{}" font-family="Arial" font-size="11" font-weight="bold">{}</text>'.format(H-25,info.get("file_no","").replace("/"," / ")))
+    cx_seal=(col2_x+col3_x)//2; cy_seal=bot_y+60
+    out.append('<circle cx="{}" cy="{}" r="45" fill="none" stroke="black" stroke-width="1.5"/>'.format(cx_seal,cy_seal))
+    out.append('<circle cx="{}" cy="{}" r="38" fill="none" stroke="black" stroke-width="1"/>'.format(cx_seal,cy_seal))
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="8" font-weight="bold">OFFICIAL SEAL</text>'.format(cx_seal,cy_seal-10))
+    out.append('<text x="{}" y="{}" text-anchor="middle" font-family="Arial" font-size="7">REG. NO.</text>'.format(cx_seal,cy_seal+5))
+    cx=col3_x+10; cy=bot_y+18
+    out.append('<text x="{}" y="{}" font-family="Arial" font-size="8">Certified True Copy of Original</text>'.format(cx,cy))
+    cy+=12
+    out.append('<text x="{}" y="{}" font-family="Arial" font-size="8">Plan made by me</text>'.format(cx,cy))
+    cy+=35
+    out.append('<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="black" stroke-width="0.8"/>'.format(cx,cy,W-25,cy))
+    cy+=14
+    out.append('<text x="{}" y="{}" font-family="Arial" font-size="9" font-weight="bold">{}</text>'.format(cx,cy,info.get("surveyor_name","")[:30]))
+    cy+=13
+    out.append('<text x="{}" y="{}" font-family="Arial" font-size="8">(FNIS)</text>'.format(cx,cy))
+    cy+=12
+    out.append('<text x="{}" y="{}" font-family="Arial" font-size="8">SURVEYOR</text>'.format(cx,cy))
+    cy+=12
+    out.append('<text x="{}" y="{}" font-family="Arial" font-size="8">{}</text>'.format(cx,cy,info.get("survey_date","")))
+    out.append('</svg>')
+    return "\n".join(out)
