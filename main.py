@@ -6,7 +6,6 @@ from typing import List, Optional
 import traceback
 from compute import compute_traverse
 from pdf_generator import draw_survey_plan
-from svg_generator import draw_survey_svg
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -63,6 +62,7 @@ def generate_plan(request: GeneratePlanRequest):
 @app.post("/generate-svg")
 def generate_svg(request: GeneratePlanRequest):
     try:
+        from svg_generator import draw_survey_svg
         points = [p.dict() for p in request.traverse_points]
         result = compute_traverse(points)
         info = request.survey_info.dict()
