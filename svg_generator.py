@@ -1,5 +1,11 @@
 import math
 
+def draw_beacon_svg(parts, px, py, s=8):
+    parts.append('<line x1="' + str(round(px,1)) + '" y1="' + str(round(py-s*2.2,1)) + '" x2="' + str(round(px,1)) + '" y2="' + str(round(py+s*2.2,1)) + '" stroke="black" stroke-width="0.8"/>')
+    parts.append('<line x1="' + str(round(px-s*2.2,1)) + '" y1="' + str(round(py,1)) + '" x2="' + str(round(px+s*2.2,1)) + '" y2="' + str(round(py,1)) + '" stroke="black" stroke-width="0.8"/>')
+    parts.append('<rect x="' + str(round(px-s,1)) + '" y="' + str(round(py-s,1)) + '" width="' + str(round(s*2,1)) + '" height="' + str(round(s*2,1)) + '" fill="white" stroke="black" stroke-width="0.8"/>')
+    parts.append('<circle cx="' + str(round(px,1)) + '" cy="' + str(round(py,1)) + '" r="' + str(round(s*0.7,1)) + '" fill="white" stroke="black" stroke-width="0.8"/>')
+
 def draw_survey_svg(info, result):
     W = 794
     H = 1123
@@ -22,17 +28,25 @@ def draw_survey_svg(info, result):
     sketch_x = 40
     sketch_y = 260
     sketch_w = 714
-    sketch_h = 600
-    pad = 50
+    sketch_h = 560
+    pad = 60
     scale_x = (sketch_w - 2 * pad) / re_
     scale_y = (sketch_h - 2 * pad) / rn
     scale = min(scale_x, scale_y)
 
+    poly_w = re_ * scale
+    poly_h = rn * scale
+    offset_x = sketch_x + (sketch_w - poly_w) / 2
+    offset_y = sketch_y + (sketch_h - poly_h) / 2
+
     def tx(e):
-        return sketch_x + pad + (e - mine) * scale
+        return offset_x + (e - mine) * scale
 
     def ty(n):
-        return sketch_y + sketch_h - pad - (n - minn) * scale
+        return offset_y + sketch_h - (n - minn) * scale - (sketch_y - offset_y)
+
+    def ty(n):
+        return offset_y + poly_h - (n - minn) * scale
 
     parts = []
     parts.append('<svg xmlns="http://www.w3.org/2000/svg" width="' + str(W) + '" height="' + str(H) + '" viewBox="0 0 ' + str(W) + ' ' + str(H) + '">')
@@ -68,13 +82,19 @@ def draw_survey_svg(info, result):
     area_txt = "AREA : " + str(area_sqm) + " SQ.METRES (" + str(area_ha) + " HECTS / " + str(acres) + " ACRES)"
     parts.append('<text x="' + str(W//2) + '" y="' + str(cy) + '" text-anchor="middle" font-family="Arial" font-size="9">' + area_txt + '</text>')
 
-    parts.append('<rect x="' + str(sketch_x) + '" y="' + str(sketch_y) + '" width="' + str(sketch_w) + '" height="' + str(sketch_h) + '" fill="white" stroke="black" stroke-width="1"/>')
+    # NO box border around sketch area now
 
     ax = sketch_x + sketch_w - 30
     ay = sketch_y + 30
     parts.append('<line x1="' + str(ax) + '" y1="' + str(ay+25) + '" x2="' + str(ax) + '" y2="' + str(ay) + '" stroke="black" stroke-width="1.5"/>')
     parts.append('<polygon points="' + str(ax) + ',' + str(ay) + ' ' + str(ax-6) + ',' + str(ay+15) + ' ' + str(ax+6) + ',' + str(ay+15) + '" fill="black"/>')
     parts.append('<text x="' + str(ax) + '" y="' + str(ay-5) + '" text-anchor="middle" font-family="Arial" font-size="11" font-weight="bold">N</text>')
+
+    origin_n = info.get("origin_n","")
+    origin_e = info.get("origin_e","")
+    if origin_n and origin_e:
+        parts.append('<text x="' + str(sketch_x+sketch_w-10) + '" y="' + str(sketch_y+sketch_h-60) + '" text-anchor="end" font-family="Arial" font-size="8">' + str(origin_n) + 'mN</text>')
+        parts.append('<text x="' + str(sketch_x+sketch_w-10) + '" y="' + str(sketch_y+sketch_h-48) + '" text-anchor="end" font-family="Arial" font-size="8">' + str(origin_e) + 'mE</text>')
 
     for i in range(len(rows)):
         row = rows[i]
@@ -112,19 +132,20 @@ def draw_survey_svg(info, result):
             beacon = beacons[i].strip()
         else:
             beacon = "EL" + str(5540+i) + "HQ"
-        parts.append('<circle cx="' + str(round(px,1)) + '" cy="' + str(round(py,1)) + '" r="4" fill="black"/>')
-        if px < sketch_x + sketch_w/2:
-            ox = 8
+        draw_beacon_svg(parts, px, py, s=7)
+        if px < offset_x + poly_w/2:
+            ox = 14
         else:
-            ox = -45
-        if py > sketch_y + sketch_h/2:
-            oy = -8
+            ox = -65
+        if py > offset_y + poly_h/2:
+            oy = -14
         else:
-            oy = 15
+            oy = 22
         parts.append('<text x="' + str(round(px+ox,1)) + '" y="' + str(round(py+oy,1)) + '" font-family="Arial" font-size="7">SC/OY</text>')
         parts.append('<text x="' + str(round(px+ox,1)) + '" y="' + str(round(py+oy+9,1)) + '" font-family="Arial" font-size="7">' + beacon + '</text>')
-        parts.append('<text x="' + str(round(px-8,1)) + '" y="' + str(round(py+20,1)) + '" font-family="Arial" font-size="9" font-weight="bold">' + str(pt["station"]) + '</text>')
+        parts.append('<text x="' + str(round(px-6,1)) + '" y="' + str(round(py-12,1)) + '" font-family="Arial" font-size="9" font-weight="bold">' + str(pt["station"]) + '</text>')
 
+    # === FIRM DETAILS — back to normal place below sketch ===
     bot_y = sketch_y + sketch_h + 5
     col2_x = W//2 - 80
     col3_x = W//2 + 80
