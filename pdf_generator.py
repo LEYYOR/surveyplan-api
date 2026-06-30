@@ -12,13 +12,13 @@ WHITE = colors.white
 def draw_beacon(c, px, py, size=2.0):
     s = size * mm
     c.setStrokeColor(BLACK); c.setLineWidth(0.5)
+    # Cross lines drawn FIRST, extending from center through circle and square, out beyond
+    c.line(px, py-s*2.2, px, py+s*2.2)
+    c.line(px-s*2.2, py, px+s*2.2, py)
+    # Square on top
     c.rect(px-s, py-s, s*2, s*2, fill=0, stroke=1)
+    # Circle on top
     c.circle(px, py, s*0.7, fill=0, stroke=1)
-    c.setLineWidth(0.4)
-    c.line(px, py+s, px, py+s*2.2)
-    c.line(px, py-s, px, py-s*2.2)
-    c.line(px-s, py, px-s*2.2, py)
-    c.line(px+s, py, px+s*2.2, py)
 
 def draw_survey_plan(info, result):
     buf = io.BytesIO()
