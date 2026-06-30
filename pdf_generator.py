@@ -104,8 +104,6 @@ def draw_survey_plan(info, result):
     c.circle(cx_seal, cy_seal, 10*mm, fill=0, stroke=1)
     c.setFont("Helvetica-Bold", 5); c.setFillColor(BLACK)
     c.drawCentredString(cx_seal, cy_seal+3*mm, "OFFICIAL SEAL")
-    c.setFont("Helvetica", 5)
-    c.drawCentredString(cx_seal, cy_seal, "REG. NO.")
     cert_x = col3_x + 2*mm
     cert_y = bot_y - 5*mm
     c.setFont("Helvetica", 6); c.setFillColor(BLACK)
